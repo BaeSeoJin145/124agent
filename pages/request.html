@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>건의함 — 12-4 Agent</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#810707">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="12-4 Agent">
+
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* 배경 orb */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(70px);
+            will-change: transform;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(180, 10, 10, 0.55) 0%, transparent 65%);
+            top: -20%;
+            left: -15%;
+            animation: floatOrb1 8s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(200, 30, 30, 0.35) 0%, transparent 60%);
+            bottom: -15%;
+            right: -12%;
+            animation: floatOrb2 10s ease-in-out infinite;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(140, 7, 7, 0.3) 0%, transparent 60%);
+            top: 40%;
+            left: 55%;
+            animation: floatOrb3 7s ease-in-out infinite;
+        }
+
+        @keyframes floatOrb1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .9;
+            }
+
+            40% {
+                transform: translate(12%, 16%) scale(1.12);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(-8%, 8%) scale(.92);
+                opacity: .75;
+            }
+        }
+
+        @keyframes floatOrb2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .8;
+            }
+
+            35% {
+                transform: translate(-12%, -12%) scale(1.15);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(8%, -14%) scale(.9);
+                opacity: .65;
+            }
+        }
+
+        @keyframes floatOrb3 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .7;
+            }
+
+            50% {
+                transform: translate(-16%, 14%) scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        body {
+            background: #0d0606;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            backdrop-filter: blur(16px);
+            background: rgba(13, 6, 6, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            color: white;
+            padding: 15px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            font-size: clamp(17px, 4vw, 22px);
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .page-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 620px;
+        }
+
+        .card-header {
+            margin-bottom: 28px;
+        }
+
+        .card-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 6px;
+        }
+
+        .card-header p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.45);
+            line-height: 1.6;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.07);
+            margin: 0 0 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 6px;
+        }
+
+        label span {
+            color: #810707;
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.06);
+            color: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            resize: vertical;
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: rgba(248, 113, 113, 0.5);
+            box-shadow: 0 0 0 3px rgba(129, 7, 7, 0.2);
+            background: rgba(255, 255, 255, 0.09);
+        }
+
+        input[type="text"]::placeholder,
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        select option {
+            background: #1a0505;
+            color: white;
+        }
+
+        textarea {
+            min-height: 160px;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-row label {
+            margin: 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.65);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #810707;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #810707, #5c0505);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            margin-top: 4px;
+        }
+
+        .btn-submit:hover {
+            opacity: 0.9;
+        }
+
+        .btn-submit:active {
+            transform: scale(0.98);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        /* 성공 메시지 */
+        .success-msg {
+            display: none;
+            text-align: center;
+            padding: 20px 0 12px;
+        }
+
+        .success-msg .icon {
+            font-size: 54px;
+            margin-bottom: 16px;
+        }
+
+        .success-msg h4 {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .success-msg p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.6;
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 12px 28px;
+            background: #810707;
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .btn-back:hover {
+            opacity: 0.88;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 500px) {
+            .card {
+                padding: 28px 18px;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <header>
+        <h2>학급 건의함</h2>
+        <button class="back-btn" onclick="location.href='landing.html'">대시보드</button>
+    </header>
+
+    <div class="page-wrapper">
+        <div class="card">
+
+            <!-- 폼 섹션 -->
+            <div id="form-section">
+                <div class="card-header">
+                    <h3>문의 / 건의 사항</h3>
+                    <p>제출된 내용은 Firebase에 저장되어 담임 선생님이 확인할 수 있습니다.<br>익명으로도 제출 가능합니다.</p>
+                </div>
+                <div class="divider"></div>
+
+                <form id="request-form" onsubmit="submitForm(event)">
+
+                    <div class="toggle-row">
+                        <input type="checkbox" id="anonymous-check" onchange="toggleAnon(this)">
+                        <label for="anonymous-check">익명으로 제출</label>
+                    </div>
+
+                    <div class="form-group" id="name-group">
+                        <label for="sender-name">이름</label>
+                        <input type="text" id="sender-name" placeholder="이름을 입력하세요">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">분류 <span>*</span></label>
+                        <select id="category" required>
+                            <option value="" disabled selected>분류를 선택해주세요</option>
+                            <option value="학사/일정">학사 / 일정</option>
+                            <option value="수업/학습">수업 / 학습 관련</option>
+                            <option value="급식/시설">급식 / 시설 환경</option>
+                            <option value="학급 분위기">학급 분위기 / 관계</option>
+                            <option value="행사/활동">행사 / 활동</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">제목 <span>*</span></label>
+                        <input type="text" id="subject" placeholder="제목을 입력해주세요" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="body">내용 <span>*</span></label>
+                        <textarea id="body" placeholder="건의 또는 문의하실 내용을 자세히 적어주세요." required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="submit-btn">
+                        <span id="btn-text">제출하기</span>
+                        <div class="spinner" id="spinner"></div>
+                    </button>
+
+                </form>
+            </div>
+
+            <!-- 성공 메시지 -->
+            <div class="success-msg" id="success-section">
+                <div class="icon">✅</div>
+                <h4>건의가 제출되었습니다!</h4>
+                <p>내용이 성공적으로 저장되었습니다.<br>담임 선생님이 확인 후 조치하겠습니다.</p>
+                <a href="landing.html" class="btn-back">대시보드로 돌아가기</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+        // ★ Firebase Console → 프로젝트 설정 → 클라우드 메시징 → "서버 키" 붙여넣기
+        const FCM_SERVER_KEY = "YOUR_FCM_SERVER_KEY_HERE";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEm-XkkiOP-PshsDhA7naY8RrAB0ty6rk",
+            authDomain: "project-401158774225034026.firebaseapp.com",
+            databaseURL: "https://project-401158774225034026-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "project-401158774225034026",
+            storageBucket: "project-401158774225034026.firebasestorage.app",
+            messagingSenderId: "681425270652",
+            appId: "1:681425270652:web:65cd93e979e7c17125d6f9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // 로그인 체크
+        const studentId = localStorage.getItem("studentId");
+        const studentName = localStorage.getItem("studentName");
+
+        if (!studentId) {
+            alert("로그인이 필요합니다.");
+            location.href = "../index.html";
+        }
+
+        // 이름 기본값
+        if (studentName) {
+            document.getElementById("sender-name").value = studentName;
+        }
+
+        // 익명 토글
+        window.toggleAnon = function (cb) {
+            const nameGroup = document.getElementById("name-group");
+            const nameInput = document.getElementById("sender-name");
+            if (cb.checked) {
+                nameGroup.style.display = "none";
+                nameInput.value = "";
+            } else {
+                nameGroup.style.display = "block";
+                nameInput.value = studentName || "";
+            }
+        };
+
+        // FCM으로 관리자에게 푸시 전송 (Netlify Function 경유)
+        async function sendFcmToAdmins(title, body) {
+            try {
+                // Firebase에서 관리자 FCM 토큰 조회
+                const snap = await get(ref(db, "admin-fcm-tokens"));
+                if (!snap.exists()) {
+                    console.warn("[FCM] 관리자 토큰 없음");
+                    return;
+                }
+
+                const tokens = Object.values(snap.val())
+                    .map(v => v.token)
+                    .filter(Boolean);
+
+                if (!tokens.length) return;
+
+                // Netlify Function 경유 전송 (Firebase Admin SDK 사용)
+                const res = await fetch("/.netlify/functions/send-fcm", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        tokens,
+                        title,
+                        body,
+                        url: "/pages/admino.html"
+                    })
+                });
+
+                const result = await res.json();
+                console.log("[FCM] 관리자 푸시 전송 완료:", result);
+            } catch (err) {
+                console.warn("[FCM] 푸시 전송 오류:", err);
+            }
+        }
+
+        // 제출
+        window.submitForm = async function (e) {
+            e.preventDefault();
+
+            const isAnon = document.getElementById("anonymous-check").checked;
+            const name = isAnon ? "익명" : (document.getElementById("sender-name").value.trim() || studentName || "미입력");
+            const category = document.getElementById("category").value;
+            const subject = document.getElementById("subject").value.trim();
+            const body = document.getElementById("body").value.trim();
+
+            const btn = document.getElementById("submit-btn");
+            const btnText = document.getElementById("btn-text");
+            const spinner = document.getElementById("spinner");
+            btn.disabled = true;
+            btnText.style.display = "none";
+            spinner.style.display = "block";
+
+            try {
+                await push(ref(db, "requests"), {
+                    name,
+                    studentId: isAnon ? "익명" : studentId,
+                    category,
+                    subject,
+                    body,
+                    submittedAt: new Date().toISOString()
+                });
+
+                // 관리자에게 FCM 푸시 전송 (백그라운드 포함)
+                await sendFcmToAdmins(
+                    `새로운 건의사항이 접수되었습니다`,
+                    `[${category}] ${subject} — 작성자: ${name}`
+                );
+
+                // 성공 화면
+                document.getElementById("form-section").style.display = "none";
+                document.getElementById("success-section").style.display = "block";
+
+            } catch (err) {
+                console.error("제출 오류:", err);
+                alert("제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                btn.disabled = false;
+                btnText.style.display = "block";
+                spinner.style.display = "none";
+            }
+        };
+    </script>
+
+    <!-- 공통 PWA 초기화 -->
+    <script src="../pwa.js"></script>
+
+</body>
+
+</html>

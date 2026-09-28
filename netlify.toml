@@ -1,0 +1,16 @@
+[build]
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/:splat"
+  status = 200
+
+# D-Day 알림 6시간마다 (UTC 1,7,13,19시 = KST/UTC+7 기준 8시,14시,20시,02시)
+[functions."daily-reminders"]
+  schedule = "0 1,7,13,19 * * *"
+
+# netlify/functions/package.json 의 의존성 자동 설치
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
+

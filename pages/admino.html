@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 — 건의함 관리</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#810707">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="12-4 Agent">
+
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 배경 orb */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(70px);
+            will-change: transform;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(180, 10, 10, 0.5) 0%, transparent 65%);
+            top: -20%;
+            left: -15%;
+            animation: floatOrb1 8s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(200, 30, 30, 0.3) 0%, transparent 60%);
+            bottom: -15%;
+            right: -12%;
+            animation: floatOrb2 10s ease-in-out infinite;
+        }
+
+        @keyframes floatOrb1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .9;
+            }
+
+            40% {
+                transform: translate(10%, 14%) scale(1.1);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(-8%, 8%) scale(.92);
+                opacity: .75;
+            }
+        }
+
+        @keyframes floatOrb2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .8;
+            }
+
+            35% {
+                transform: translate(-10%, -10%) scale(1.12);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(8%, -12%) scale(.9);
+                opacity: .65;
+            }
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0d0606;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            backdrop-filter: blur(16px);
+            background: rgba(13, 6, 6, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            font-size: clamp(16px, 4vw, 20px);
+            font-weight: 700;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-header {
+            color: white;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-header:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .main {
+            flex: 1;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 32px 20px;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 140px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .stat-card .num {
+            font-size: 32px;
+            font-weight: 800;
+            color: #f87171;
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.45);
+            margin-top: 4px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge-new {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        /* 건의 카드 */
+        .request-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .request-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 14px;
+            padding: 20px 22px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border-left: 4px solid rgba(255, 255, 255, 0.08);
+            transition: transform 0.15s, box-shadow 0.15s;
+            cursor: default;
+        }
+
+        .request-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+        }
+
+        .request-card.unread {
+            border-left-color: #f87171;
+            background: rgba(129, 7, 7, 0.12);
+        }
+
+        .card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tag-category {
+            background: rgba(254, 243, 199, 0.15);
+            color: #fbbf24;
+        }
+
+        .tag-anon {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .tag-unread {
+            background: rgba(239, 68, 68, 0.18);
+            color: #f87171;
+        }
+
+        .card-time {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            white-space: nowrap;
+        }
+
+        .card-subject {
+            font-size: 17px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 6px;
+        }
+
+        .card-sender {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.45);
+            margin-bottom: 10px;
+        }
+
+        .card-body {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.65;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .card-actions {
+            margin-top: 14px;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .btn-read {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .btn-read.mark {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .btn-read.mark:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .btn-read.del {
+            background: rgba(239, 68, 68, 0.18);
+            color: #f87171;
+        }
+
+        .btn-read.del:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 64px 20px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .empty-state .icon {
+            font-size: 52px;
+            margin-bottom: 14px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+        }
+
+        /* 알림 토스트 */
+        .toast {
+            position: fixed;
+            top: 76px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 9999;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+            max-width: 320px;
+            animation: slideIn 0.3s ease;
+            line-height: 1.5;
+        }
+
+        .toast strong {
+            display: block;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 접근 거부 화면 */
+        #access-denied {
+            display: none;
+            flex: 1;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+            color: #64748b;
+            font-size: 18px;
+        }
+
+        @media (max-width: 540px) {
+            .stats-row {
+                gap: 10px;
+            }
+
+            .stat-card {
+                min-width: 100px;
+                padding: 14px;
+            }
+
+            .stat-card .num {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <header>
+        <h2>건의함 관리</h2>
+        <div class="header-right">
+            <span class="admin-badge" id="admin-name-badge">관리자</span>
+            <button class="btn-header" onclick="location.href='landing.html'">대시보드</button>
+        </div>
+    </header>
+
+    <!-- 접근 거부 -->
+    <div id="access-denied"
+        style="display:none; flex:1; align-items:center; justify-content:center; flex-direction:column; gap:16px; color:#64748b;">
+        <div style="font-size:54px;">🔒</div>
+        <div style="font-size:20px; font-weight:700; color:#1e293b;">접근 권한이 없습니다</div>
+        <div style="font-size:15px;">이 페이지는 관리자만 접근할 수 있습니다.</div>
+        <a href="landing.html"
+            style="margin-top:8px; background:#810707; color:white; padding:11px 24px; border-radius:10px; text-decoration:none; font-weight:600;">돌아가기</a>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="main" id="main-content" style="display:none;">
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="num" id="stat-total">0</div>
+                <div class="label">전체 건의</div>
+            </div>
+            <div class="stat-card">
+                <div class="num" id="stat-unread">0</div>
+                <div class="label">읽지 않음</div>
+            </div>
+            <div class="stat-card">
+                <div class="num" id="stat-today">0</div>
+                <div class="label">오늘 접수</div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            전체 건의 목록
+            <span class="badge-new" id="new-badge" style="display:none;">NEW</span>
+        </div>
+
+        <div class="request-list" id="request-list">
+            <div class="empty-state">
+                <div class="icon">📭</div>
+                <p>건의 사항이 없습니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+        const ADMINS = {
+            "12418": "배서진",
+            "12419": "서동현"
+        };
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEm-XkkiOP-PshsDhA7naY8RrAB0ty6rk",
+            authDomain: "project-401158774225034026.firebaseapp.com",
+            databaseURL: "https://project-401158774225034026-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "project-401158774225034026",
+            storageBucket: "project-401158774225034026.firebasestorage.app",
+            messagingSenderId: "681425270652",
+            appId: "1:681425270652:web:65cd93e979e7c17125d6f9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        /* 로그인 확인 */
+        const studentId = localStorage.getItem("studentId");
+        const studentName = localStorage.getItem("studentName");
+
+        if (!studentId) {
+            alert("로그인이 필요합니다.");
+            location.href = "../index.html";
+        }
+
+        /* 관리자 권한 확인 */
+        if (!ADMINS[studentId]) {
+            document.getElementById("access-denied").style.display = "flex";
+        } else {
+            document.getElementById("admin-name-badge").textContent = `👤 ${studentName || ADMINS[studentId]}`;
+            document.getElementById("main-content").style.display = "block";
+            startAdminDashboard();
+        }
+
+        /* 알림 권한 요청 */
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        let knownKeys = null; // 최초 로드 완료 후 새 항목 감지용
+
+        function startAdminDashboard() {
+            onValue(ref(db, "requests"), (snap) => {
+                const data = snap.val() || {};
+                const entries = Object.entries(data)
+                    .map(([key, val]) => ({ key, ...val }))
+                    .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+                // 새 건의 알림 (최초 로드 이후부터)
+                if (knownKeys !== null) {
+                    entries.forEach(e => {
+                        if (!knownKeys.has(e.key)) {
+                            showNewRequestNotification(e);
+                        }
+                    });
+                }
+                knownKeys = new Set(entries.map(e => e.key));
+
+                renderList(entries);
+                updateStats(entries);
+            });
+        }
+
+        function updateStats(entries) {
+            const today = new Date().toISOString().split("T")[0];
+            const unread = entries.filter(e => !e.read).length;
+            const todayCount = entries.filter(e => e.submittedAt && e.submittedAt.startsWith(today)).length;
+
+            document.getElementById("stat-total").textContent = entries.length;
+            document.getElementById("stat-unread").textContent = unread;
+            document.getElementById("stat-today").textContent = todayCount;
+
+            const badge = document.getElementById("new-badge");
+            badge.style.display = unread > 0 ? "inline-block" : "none";
+            badge.textContent = `${unread} NEW`;
+        }
+
+        function renderList(entries) {
+            const list = document.getElementById("request-list");
+            if (entries.length === 0) {
+                list.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>건의 사항이 없습니다.</p></div>`;
+                return;
+            }
+
+            list.innerHTML = "";
+            entries.forEach(e => {
+                const card = document.createElement("div");
+                card.className = "request-card" + (e.read ? "" : " unread");
+
+                const time = e.submittedAt
+                    ? new Date(e.submittedAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+                    : "";
+
+                card.innerHTML = `
+                    <div class="card-top">
+                        <div class="card-meta">
+                            ${e.category ? `<span class="tag tag-category">${e.category}</span>` : ""}
+                            ${e.studentId === "익명" ? `<span class="tag tag-anon">익명</span>` : ""}
+                            ${!e.read ? `<span class="tag tag-unread">미확인</span>` : ""}
+                        </div>
+                        <span class="card-time">${time}</span>
+                    </div>
+                    <div class="card-subject">${escapeHtml(e.subject || "(제목 없음)")}</div>
+                    <div class="card-sender">작성자: ${escapeHtml(e.name || "익명")}${e.studentId && e.studentId !== "익명" ? ` (학번: ${e.studentId})` : ""}</div>
+                    <div class="card-body">${escapeHtml(e.body || "")}</div>
+                    <div class="card-actions">
+                        ${!e.read ? `<button class="btn-read mark" onclick="markRead('${e.key}')">읽음 처리</button>` : ""}
+                        <button class="btn-read del" onclick="deleteRequest('${e.key}')">삭제</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        /* 읽음 처리 */
+        window.markRead = function (key) {
+            update(ref(db, `requests/${key}`), { read: true });
+        };
+
+        /* 삭제 */
+        window.deleteRequest = function (key) {
+            if (confirm("이 건의를 삭제하시겠습니까?")) {
+                remove(ref(db, `requests/${key}`));
+            }
+        };
+
+        /* 새 건의 알림 */
+        function showNewRequestNotification(entry) {
+            const title = `새 건의가 접수되었습니다`;
+            const body = `[${entry.category || "기타"}] ${entry.subject || ""}\n작성자: ${entry.name || "익명"}`;
+
+            // 앱 내 토스트
+            showToast(title, body);
+
+            // OS 알림
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    const noti = new Notification(title, {
+                        body,
+                        icon: "../assets/android-chrome-192x192.png",
+                        tag: "request-" + entry.key,
+                    });
+                    noti.onclick = () => {
+                        window.focus();
+                        window.scrollTo(0, 0);
+                        noti.close();
+                    };
+                } catch (_) { }
+            }
+
+            // Service Worker 알림 (백그라운드 대응)
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    if (reg.active) {
+                        reg.active.postMessage({
+                            type: "NEW_REQUEST",
+                            title,
+                            body,
+                            url: "./admino.html"
+                        });
+                    }
+                });
+            }
+        }
+
+        function showToast(title, body) {
+            const el = document.createElement("div");
+            el.className = "toast";
+            el.innerHTML = `<strong>🔔 ${escapeHtml(title)}</strong>${escapeHtml(body)}`;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity 0.5s"; }, 3500);
+            setTimeout(() => el.remove(), 4100);
+        }
+    </script>
+
+    <!-- 공통 PWA 초기화 -->
+    <script src="../pwa.js"></script>
+
+</body>
+
+</html>

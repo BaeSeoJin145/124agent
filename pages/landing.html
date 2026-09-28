@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12-4 Agent Program</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#810707">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="12-4 Agent">
+
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0d0606;
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* 배경 애니메이션 orb */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(70px);
+            will-change: transform, opacity;
+        }
+
+        .orb-1 {
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(180, 10, 10, 0.65) 0%, transparent 65%);
+            top: -25%;
+            left: -20%;
+            animation: floatOrb1 7s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, rgba(200, 30, 30, 0.42) 0%, transparent 60%);
+            bottom: -20%;
+            right: -15%;
+            animation: floatOrb2 9s ease-in-out infinite;
+        }
+
+        .orb-3 {
+            width: 420px;
+            height: 420px;
+            background: radial-gradient(circle, rgba(140, 7, 7, 0.38) 0%, transparent 60%);
+            top: 40%;
+            left: 50%;
+            animation: floatOrb3 6s ease-in-out infinite;
+        }
+
+        .orb-4 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(220, 50, 50, 0.28) 0%, transparent 60%);
+            top: 15%;
+            right: 18%;
+            animation: floatOrb4 11s ease-in-out infinite;
+        }
+
+        @keyframes floatOrb1 {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.9;
+            }
+
+            20% {
+                transform: translate(14%, 18%) scale(1.15);
+                opacity: 1;
+            }
+
+            50% {
+                transform: translate(8%, -12%) scale(0.9);
+                opacity: 0.7;
+            }
+
+            75% {
+                transform: translate(-12%, 10%) scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.9;
+            }
+        }
+
+        @keyframes floatOrb2 {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.85;
+            }
+
+            25% {
+                transform: translate(-14%, -12%) scale(1.18);
+                opacity: 1;
+            }
+
+            55% {
+                transform: translate(12%, -16%) scale(0.88);
+                opacity: 0.65;
+            }
+
+            80% {
+                transform: translate(-8%, 10%) scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.85;
+            }
+        }
+
+        @keyframes floatOrb3 {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.7;
+            }
+
+            30% {
+                transform: translate(-20%, 16%) scale(1.22);
+                opacity: 1;
+            }
+
+            60% {
+                transform: translate(16%, 12%) scale(0.82);
+                opacity: 0.55;
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes floatOrb4 {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.6;
+            }
+
+            40% {
+                transform: translate(-16%, 20%) scale(1.2);
+                opacity: 0.9;
+            }
+
+            70% {
+                transform: translate(12%, -12%) scale(0.85);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.6;
+            }
+        }
+
+        /* 헤더 */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(16px);
+            background: rgba(13, 6, 6, 0.72);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-logo {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: white;
+        }
+
+        .header-logo span {
+            color: #f87171;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .greeting-pill {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+        }
+
+        /* 메인 영역 */
+        main {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+            padding: 60px 28px 80px;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* 히어로 섹션 */
+        .hero {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .hero-eyebrow {
+            display: inline-block;
+            background: rgba(248, 113, 113, 0.15);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: #f87171;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-size: clamp(32px, 6vw, 56px);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
+        }
+
+        .hero h1 .accent {
+            background: linear-gradient(135deg, #f87171, #810707);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-size: 17px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 400;
+        }
+
+        /* 카드 그리드 */
+        .cards-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 28px 26px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(129, 7, 7, 0.12), transparent);
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+
+        .card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(248, 113, 113, 0.25);
+            transform: translateY(-3px);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        /* 카드 아이콘 SVG */
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(129, 7, 7, 0.25);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: #f87171;
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .card h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 6px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.45);
+            line-height: 1.5;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 관리자 카드 */
+        .card.admin {
+            border-color: rgba(248, 113, 113, 0.2);
+            background: rgba(129, 7, 7, 0.15);
+        }
+
+        .card.admin .card-icon {
+            background: rgba(129, 7, 7, 0.4);
+            border-color: rgba(248, 113, 113, 0.4);
+        }
+
+        .card.admin h3 {
+            color: #fca5a5;
+        }
+
+        /* 외부 링크 카드 */
+        .card.external::after {
+            content: '→';
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.2);
+            transition: color 0.2s;
+        }
+
+        .card.external:hover::after {
+            color: rgba(248, 113, 113, 0.7);
+        }
+
+        /* 반응형 */
+        @media (max-width: 480px) {
+            main {
+                padding: 40px 18px 60px;
+            }
+
+            header {
+                padding: 12px 18px;
+            }
+
+            .hero {
+                margin-bottom: 44px;
+            }
+
+            .hero h1 {
+                font-size: 30px;
+            }
+
+            .header-logo {
+                font-size: 16px;
+            }
+
+            .greeting-pill {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 떠다니는 배경 orb -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+
+    <header>
+        <div class="header-logo">12<span>-4</span> Agent</div>
+        <div class="header-right">
+            <span class="greeting-pill" id="greeting-pill">로딩 중...</span>
+            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="hero">
+            <div class="hero-eyebrow">12-4 Agent Website</div>
+            <h1>안녕하세요<br><span class="accent" id="hero-name">학생</span>님!</h1>
+            <p class="hero-sub">원하는 메뉴를 선택해주세요.</p>
+        </div>
+
+        <div class="cards-label">메뉴</div>
+        <div class="grid" id="card-grid">
+
+            <div class="card" onclick="location.href='calendar.html'">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                </div>
+                <h3>개인 맞춤형 달력</h3>
+                <p>수업 및 일정 관리</p>
+            </div>
+
+            <div class="card external"
+                onclick="window.open('https://drive.google.com/drive/folders/1mz0ahfXM2bBbUX84XI4j_aOD0OLV9nQb?usp=sharing','_blank')">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    </svg>
+                </div>
+                <h3>학습 자료 드라이브</h3>
+                <p>수업 자료 및 파일 관리</p>
+            </div>
+
+            <div class="card" onclick="location.href='activity.html'">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <polygon
+                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                </div>
+                <h3>진로 외부 활동 추천</h3>
+                <p>공모전 및 대외활동 사이트 모음</p>
+            </div>
+
+            <div class="card" onclick="location.href='journal.html'">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                </div>
+                <h3>논문 요약 &amp; 추천</h3>
+                <p>논문 요약 및 추천</p>
+            </div>
+
+            <div class="card" onclick="location.href='request.html'">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                    </svg>
+                </div>
+                <h3>건의함</h3>
+                <p>학급 안건 발의 및 의견 제출</p>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const ADMINS = { "12418": "배서진", "12419": "서동현" };
+
+        const studentId = localStorage.getItem("studentId");
+        const studentName = localStorage.getItem("studentName");
+
+        if (!studentId) {
+            alert("로그인이 필요합니다.");
+            location.href = "../index.html";
+        } else {
+            // 인사말
+            const displayName = studentName || "학생";
+            document.getElementById("greeting-pill").textContent = `${displayName}님`;
+            document.getElementById("hero-name").textContent = displayName;
+
+            // 관리자 카드 추가 (SVG 아이콘)
+            if (ADMINS[studentId]) {
+                const grid = document.getElementById("card-grid");
+                const adminCard = document.createElement("div");
+                adminCard.className = "card admin";
+                adminCard.onclick = () => location.href = "admino.html";
+                adminCard.innerHTML = `
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#f87171;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3>건의함 관리 (관리자)</h3>
+                    <p>제출된 건의 사항 확인 및 처리</p>
+                `;
+                grid.appendChild(adminCard);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("studentId");
+            localStorage.removeItem("studentName");
+            localStorage.removeItem("mySubjects");
+            localStorage.removeItem("calendarEvents");
+            location.href = "../index.html";
+        }
+    </script>
+
+    <!-- 공통 PWA 초기화 -->
+    <script src="../pwa.js"></script>
+
+    <!-- 관리자 FCM 푸시 (admino 전용) -->
+    <script type="module" src="../admin-fcm.js"></script>
+
+</body>
+
+</html>

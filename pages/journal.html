@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>논문 요약 & 추천 — 12-4 Agent</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#810707">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="12-4 Agent">
+
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0d0606;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* 배경 orb */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(70px);
+            will-change: transform;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(180, 10, 10, 0.55) 0%, transparent 65%);
+            top: -20%;
+            left: -15%;
+            animation: floatOrb1 8s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(200, 30, 30, 0.35) 0%, transparent 60%);
+            bottom: -15%;
+            right: -12%;
+            animation: floatOrb2 10s ease-in-out infinite;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(140, 7, 7, 0.3) 0%, transparent 60%);
+            top: 40%;
+            left: 55%;
+            animation: floatOrb3 7s ease-in-out infinite;
+        }
+
+        @keyframes floatOrb1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .9;
+            }
+
+            40% {
+                transform: translate(12%, 16%) scale(1.12);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(-8%, 8%) scale(.92);
+                opacity: .75;
+            }
+        }
+
+        @keyframes floatOrb2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .8;
+            }
+
+            35% {
+                transform: translate(-12%, -12%) scale(1.15);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(8%, -14%) scale(.9);
+                opacity: .65;
+            }
+        }
+
+        @keyframes floatOrb3 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .7;
+            }
+
+            50% {
+                transform: translate(-16%, 14%) scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        /* 헤더 */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(16px);
+            background: rgba(13, 6, 6, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 15px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header h2 {
+            font-size: clamp(18px, 4vw, 22px);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: white;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+
+
+        button.primary {
+            background: #810707;
+            border-color: #a10a0a;
+            color: white;
+        }
+
+        button.primary:hover {
+            background: #a10a0a;
+        }
+
+        /* 메인 컨테이너 */
+        main {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+            padding: 40px 24px;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* 검색 바 */
+        .search-container {
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+        }
+
+        .search-container input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            padding: 8px 12px;
+            outline: none;
+        }
+
+        .search-container input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* 논문 리스트 */
+        #results {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .paper-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .paper-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .paper-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .paper-meta {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 12px;
+        }
+
+        .paper-meta span {
+            color: #93c5fd;
+            /* 연도/저널명 강조 */
+        }
+
+        .paper-abstract {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .paper-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .paper-actions button {
+            font-size: 13px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 로딩 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.5);
+            display: none;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #f87171;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 모달 공통 */
+    </style>
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #1a1010;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-body {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+            /* for scrollbar */
+        }
+
+        /* 스크롤바 커스텀 (모달 내부) */
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .api-input {
+            width: 100%;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .ai-badge {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        /* ----- Sidebar (Filter) ----- */
+        .container {
+            flex: 1;
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 24px 20px;
+            gap: 30px;
+        }
+
+        .sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.35);
+            margin-bottom: 8px;
+            padding-left: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(248, 113, 113, 0.2);
+            color: white;
+        }
+
+        .filter-btn.active {
+            background: rgba(129, 7, 7, 0.55);
+            color: white;
+            border-color: rgba(248, 113, 113, 0.35);
+            box-shadow: 0 4px 14px rgba(129, 7, 7, 0.3);
+        }
+
+        /* ----- Content Grid ----- */
+        .content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .grid-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            transition: all 0.25s;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(248, 113, 113, 0.2);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.85);
+            display: inline-block;
+        }
+
+        .tag-kci {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .tag-sci {
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .tag-dom {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .tag-int {
+            background: rgba(236, 72, 153, 0.15);
+            color: #f472b6;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-footer {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .btn-view {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            flex: 1;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-view:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-ai {
+            background: rgba(129, 7, 7, 0.7);
+            color: white;
+            border: 1px solid #a10a0a;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .btn-ai:hover {
+            background: #a10a0a;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                padding: 16px;
+                gap: 20px;
+            }
+
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+
+            .filter-title {
+                display: none;
+            }
+
+            .filter-btn {
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <header>
+        <h2>논문(저널) 요약 & 사이트 추천</h2>
+        <a href="landing.html" class="back-btn">대시보드</a>
+    </header>
+
+    <div class="container">
+        <!-- 필터 사이드바 -->
+        <aside class="sidebar">
+            <div class="filter-title">진로/계열 논문 검색처</div>
+            <button class="filter-btn active" data-category="all">
+                전체 보기
+            </button>
+            <button class="filter-btn" data-category="general">
+                종합 학술 DB
+            </button>
+            <button class="filter-btn" data-category="science">
+                이공·의학
+            </button>
+            <button class="filter-btn" data-category="humanities">
+                인문·사회
+            </button>
+            <button class="filter-btn" data-category="art">
+                예체능·기타
+            </button>
+        </aside>
+
+        <main class="content">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <div class="grid-title" id="current-category" style="margin-bottom: 0;">전체 추천 논문 사이트</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn-ai" onclick="window.open('https://notebooklm.google.com/', '_blank')"
+                        style="padding: 8px 14px; border-radius: 8px; font-weight: 700; width: auto; display: flex; align-items: center; gap: 6px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                            <polyline points="15 3 21 3 21 9" />
+                            <line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                        NotebookLM 열기
+                    </button>
+                    <button class="btn-ai" onclick="copyApaPrompt()" id="btn-copy-prompt"
+                        style="padding: 8px 14px; border-radius: 8px; font-weight: 700; width: auto; background: rgba(168,85,247,0.5); border-color: #a855f7; display: flex; align-items: center; gap: 6px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        프롬프트 복사
+                    </button>
+                </div>
+            </div>
+            <div class="card-grid" id="journal-grid">
+                <!-- Data will be injected here via JS -->
+            </div>
+        </main>
+    </div>
+
+
+    <script>
+        const studentId = localStorage.getItem("studentId");
+        if (!studentId) {
+            alert("로그인이 필요합니다.");
+            location.href = "../index.html";
+        }
+
+        // 정적 추천 논문 DB
+        const journalData = [
+            // General (종합)
+            { id: 1, title: 'KCI (한국학술지인용색인)', category: 'general', tags: ['종합 DB', 'KCI 등재 판별', '국내'], desc: '한국연구재단에서 운영하며, 국내 학술지의 KCI 등재 여부(등재, 등재후보)를 가장 정확히 검색할 수 있는 공식 시스템입니다.', url: 'https://www.kci.go.kr/' },
+            { id: 2, title: 'DBpia (디비피아)', category: 'general', tags: ['종합 DB', 'KCI 다수', '국내'], desc: '국내 최대 학술 논문 플랫폼 중 하나로, 인문/사회/과학/예체능 등 모든 분야의 KCI 등재지를 다수 제공합니다.', url: 'https://www.dbpia.co.kr/' },
+            { id: 3, title: 'RISS (학술연구정보서비스)', category: 'general', tags: ['학위논문', '국내/해외'], desc: '전국 대학 소장 자료 및 국내 석/박사 학위 논문을 무료 열람할 수 있는 국가 단위 서비스입니다.', url: 'https://www.riss.kr/' },
+            { id: 4, title: 'KISS (한국학술정보)', category: 'general', tags: ['종합 DB', 'KCI 다수', '국내'], desc: 'DBpia와 경쟁하는 또 다른 국내 거대 학술 DB로, 특정 학회의 논문은 KISS에만 독점 제공되는 경우가 있습니다.', url: 'https://kiss.kstudy.com/' },
+            { id: 5, title: 'Google Scholar', category: 'general', tags: ['종합 DB', '글로벌'], desc: '전 세계의 학위논문, 학술지, 단행본, 프리프린트 등을 모두 검색할 수 있는 가장 광범위한 무료 플랫폼입니다.', url: 'https://scholar.google.com/' },
+            { id: 6, title: 'Web of Science', category: 'general', tags: ['SCIE / SSCI / A&HCI', '국제 핵심'], desc: 'Clarivate에서 제공하는 최고 권위의 국제 학술지 인용 색인 시스템. SCI 급 국제 논문 검증의 스탠다드입니다.', url: 'https://mjl.clarivate.com/home' },
+            { id: 7, title: 'Scopus', category: 'general', tags: ['SCOPUS', '국제 우수'], desc: 'Elsevier가 제공하는 세계 최대의 초록/인용 데이터베이스로, SCI 다음으로 넓은 국제 인증 기준입니다.', url: 'https://www.scopus.com/' },
+            { id: 8, title: 'Semantic Scholar', category: 'general', tags: ['AI 검색', '글로벌'], desc: 'AI를 활용하여 논문 간의 영향력을 분석하고 요약을 제공해주는 차세대 논문 검색 엔진입니다.', url: 'https://www.semanticscholar.org/' },
+
+            // Science (이공·의학)
+            { id: 9, title: 'ScienceON', category: 'science', tags: ['과학기술', '국내'], desc: 'KISTI(한국과학기술정보연구원)에서 제공하는 국가 과학기술 지식정보 포털. 과제 지원 및 국내 연구 동향 파악에 유리.', url: 'https://scienceon.kisti.re.kr/' },
+            { id: 10, title: 'PubMed', category: 'science', tags: ['의학/생명', 'SCI(E) 방대'], desc: '미국 국립보건원(NIH)에서 운영하는 세계 최고/최대의 바이오, 약학, 의학, 생명과학 문헌 데이터베이스입니다.', url: 'https://pubmed.ncbi.nlm.nih.gov/' },
+            { id: 11, title: 'IEEE Xplore', category: 'science', tags: ['IT/전자공학', 'SCI 핵심'], desc: '컴퓨터 공학, 전자/전기, AI 등의 분야에서 가장 방대한 국제 권위의 공학 논문 라이브러리입니다.', url: 'https://ieeexplore.ieee.org/' },
+            { id: 12, title: 'arXiv (아카이브)', category: 'science', tags: ['물리/수학/CS', '오픈액세스'], desc: '수학, 물리학, 컴퓨터 과학 분야 연구자들이 정식 동료평가 전에 미출판 논문을 올리는 플랫폼입니다.', url: 'https://arxiv.org/' },
+            { id: 13, title: 'ScienceDirect', category: 'science', tags: ['과학기술 종합', 'SCI(E) 다수'], desc: 'Elsevier에서 출판하는 2,500종 이상의 과학, 기술, 의학 저널 원문을 검색할 수 있습니다.', url: 'https://www.sciencedirect.com/' },
+            { id: 14, title: 'Nature', category: 'science', tags: ['종합 과학', 'SCI 최상위'], desc: '전 세계에서 가장 명성 높은 과학 저널로, 과학계 전체에 파급력을 가지는 최상위 논문이 수록됩니다.', url: 'https://www.nature.com/' },
+            { id: 15, title: 'ACM Digital Library', category: 'science', tags: ['컴퓨터과학', '국제 저명'], desc: '국제컴퓨터학회(ACM)에서 출판하는 컴퓨팅 및 정보 기술 분야의 방대한 논문 및 컨퍼런스 자료 저장소입니다.', url: 'https://dl.acm.org/' },
+            { id: 16, title: 'JKMS (대한의학회지)', category: 'science', tags: ['국내 의학', 'KCI / SCIE'], desc: '대한의학회에서 발행하는 대표적인 영문 의학 학술지로, 국내 의료계 주요 성과가 발표됩니다.', url: 'https://jkms.org/' },
+
+            // Humanities (인문·사회)
+            { id: 17, title: 'JSTOR', category: 'humanities', tags: ['인문/역사/사회', '글로벌'], desc: '가장 저명한 인문사회과학 중심의 디지털 도서관으로, 수많은 대학 및 연구기관에서 백 이슈 저널을 활용합니다.', url: 'https://www.jstor.org/' },
+            { id: 18, title: 'SSRN', category: 'humanities', tags: ['사회과학/경제', '글로벌'], desc: '사회과학 연구 네트워크. 비즈니스, 재무, 경제, 법학 분야의 최신 워킹페이퍼(Working Paper)를 공유합니다.', url: 'https://www.ssrn.com/' },
+            { id: 19, title: 'earticle (학술교육원)', category: 'humanities', tags: ['분야 종합', 'KCI 다수'], desc: '문학, 인문, 사회과학, 교육학 등 문과 계열 중심 KCI 학술지 및 간행물이 풍부하게 서비스됩니다.', url: 'https://www.earticle.net/' },
+            { id: 20, title: '교보문고 스콜라', category: 'humanities', tags: ['분야 종합', 'KCI 다수'], desc: '교보문고가 구축한 학술 데이터베이스로, 특히 인문/사회 분야 KCI 등재지 비율이 높습니다.', url: 'https://scholar.kyobobook.co.kr/' },
+            { id: 21, title: 'APA PsycNet', category: 'humanities', tags: ['심리학', '국제 핵심'], desc: '미국심리학회(APA)가 제공하는 데이터베이스로 심리학 및 행동과학 분야 세계 최고의 논문이 모여 있습니다.', url: 'https://psycnet.apa.org/' },
+
+            // Art (예체능)
+            { id: 22, title: '아우라 (AURA)', category: 'art', tags: ['예술공학', '국내'], desc: '문화체육관광부 소속 문화콘텐츠, 디자인, 예술, 문화재 관련 자료 및 R&D 성과를 통합 검색할 수 있습니다.', url: 'http://aura.kocca.kr/' },
+            { id: 23, title: '한국체육학회 (KAHPERD)', category: 'art', tags: ['체육/스포츠', 'KCI 우수등재'], desc: '대한민국 체육학계를 대표하는 KCI 우수등재 학술지로, 스포츠과학, 체육교육 등 최상위 연구가 실립니다.', url: 'http://kahperd.or.kr/' },
+            { id: 24, title: '한국디자인학회 (KSDS)', category: 'art', tags: ['디자인', 'KCI 우수등재'], desc: 'Design Research 등 디자인 분야에서 가장 높은 권위를 가진 국내 연구 기관. 시각, 산업, 융합 디자인 논문 제공.', url: 'http://www.design-science.or.kr/' },
+            { id: 25, title: '대한건축학회 / AIK', category: 'art', tags: ['건축/디자인', 'KCI 등재'], desc: '건축 계획, 디자인, 공학 관련 논문이 KCI 등재되어 있으며 대한건축학회(AIK) 학술대회 자료 조사가 가능합니다.', url: 'https://www.aik.or.kr/' },
+            { id: 26, title: '한국예술종합학교 학술지', category: 'art', tags: ['예술전문', 'KCI 등재'], desc: '한예종 산하 예술연구소 등에서 발행하는 예술학, 미술, 음악, 영상 관련 깊이있는 KCI 논문을 구합니다.', url: 'http://www.karts.ac.kr/' }
+        ];
+
+        /* 카테고리 매핑 로직 */
+        const categoryNames = {
+            "all": "전체 추천 논문 사이트",
+            "general": "종합 학술 DB 사이트",
+            "science": "자연/공학/의학 특화 사이트",
+            "humanities": "인문/사회과학 특화 사이트",
+            "art": "예체능/기타 특화 사이트"
+        };
+
+        let currentCategory = 'all';
+
+        function init() {
+            renderGrid();
+            setupFilters();
+        }
+
+        function getTagClass(tag) {
+            if (tag.includes("KCI")) return "tag-kci";
+            if (tag.includes("SCI")) return "tag-sci";
+            if (tag.includes("국내") || tag.includes("학위논문")) return "tag-dom";
+            if (tag.includes("국제") || tag.includes("글로벌")) return "tag-int";
+            return "";
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('journal-grid');
+            grid.innerHTML = '';
+
+            const filteredData = currentCategory === 'all'
+                ? journalData
+                : journalData.filter(item => item.category === currentCategory);
+
+            filteredData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                const tagsHtml = item.tags ? item.tags.map(t => `<span class="tag ${getTagClass(t)}">${t}</span>`).join('') : '';
+
+                card.innerHTML = `
+                    ${tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : ''}
+                    <div class="card-title">${item.title}</div>
+                    <div class="card-desc">${item.desc}</div>
+
+                    <div class="card-footer">
+                        <button class="btn-view" onclick="window.open('${item.url}', '_blank')">사이트 방문</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function setupFilters() {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    currentCategory = btn.dataset.category;
+                    document.getElementById('current-category').innerText = categoryNames[currentCategory];
+                    renderGrid();
+                });
+            });
+        }
+
+        /* --- 모달 및 토스트 --- */
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 2500);
+        }
+
+
+
+        function copyApaPrompt() {
+            const prompt = `아래 논문(또는 첨부 자료)을 읽고 다음 두 가지를 한국어로 작성해 주세요.
+
+[1] 논문 요약
+- 연구 목적 / 연구 방법 / 주요 결과 / 결론 및 시사점을 각각 2~4문장으로 요약해 주세요.
+- 핵심 키워드를 5개 추출해 주세요.
+
+[2] APA 7판 형식 참고문헌
+- 아래 형식에 맞춰 참고문헌을 작성해 주세요.
+  저자성(성, 이름 이니셜). (출판 연도). 논문 제목. 학술지명, 권(호), 시작 페이지-끝 페이지. https://doi.org/xxxxx
+- DOI가 없으면 URL을 대신 기입하고, URL도 없으면 생략해 주세요.
+- 저자가 3명 이하이면 전원 표기, 4명 이상이면 첫 저자 외 "... et al." 처리해 주세요.`;
+
+            navigator.clipboard.writeText(prompt).then(() => {
+                const btn = document.getElementById('btn-copy-prompt');
+                const orig = btn.innerHTML;
+                btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 복사 완료!`;
+                btn.style.background = 'rgba(16,185,129,0.5)';
+                btn.style.borderColor = '#10b981';
+                setTimeout(() => {
+                    btn.innerHTML = orig;
+                    btn.style.background = 'rgba(168,85,247,0.5)';
+                    btn.style.borderColor = '#a855f7';
+                }, 2000);
+                showToast('프롬프트가 클립보드에 복사되었습니다! NotebookLM에 붙여넣기 하세요.');
+            }).catch(() => {
+                showToast('복사 실패: 브라우저가 클립보드 접근을 허용하지 않습니다.');
+            });
+        }
+
+        init();
+    </script>
+    <!-- 토스트 알림 -->
+    <div id="toast" style="
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: rgba(30,10,10,0.95); color: white;
+        padding: 12px 22px; border-radius: 10px; font-size: 14px;
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.3s, transform 0.3s;
+        z-index: 9999; max-width: 90vw; text-align: center;
+    "></div>
+    <style>
+        #toast.show {
+            opacity: 1 !important;
+            transform: translateX(-50%) translateY(0) !important;
+        }
+    </style>
+</body>
+
+</html>

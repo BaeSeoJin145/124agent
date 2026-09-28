@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>진로 외부 활동 추천 — 12-4 Agent</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#810707">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="12-4 Agent">
+
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* 배경 orb */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(70px);
+            will-change: transform;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(180, 10, 10, 0.55) 0%, transparent 65%);
+            top: -20%;
+            left: -15%;
+            animation: floatOrb1 8s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(200, 30, 30, 0.35) 0%, transparent 60%);
+            bottom: -15%;
+            right: -12%;
+            animation: floatOrb2 10s ease-in-out infinite;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(140, 7, 7, 0.3) 0%, transparent 60%);
+            top: 40%;
+            left: 55%;
+            animation: floatOrb3 7s ease-in-out infinite;
+        }
+
+        @keyframes floatOrb1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .9;
+            }
+
+            40% {
+                transform: translate(12%, 16%) scale(1.12);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(-8%, 8%) scale(.92);
+                opacity: .75;
+            }
+        }
+
+        @keyframes floatOrb2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .8;
+            }
+
+            35% {
+                transform: translate(-12%, -12%) scale(1.15);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(8%, -14%) scale(.9);
+                opacity: .65;
+            }
+        }
+
+        @keyframes floatOrb3 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .7;
+            }
+
+            50% {
+                transform: translate(-16%, 14%) scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        body {
+            background: #0d0606;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* ----- Header ----- */
+        header {
+            backdrop-filter: blur(16px);
+            background: rgba(13, 6, 6, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            color: white;
+            padding: 15px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            font-size: clamp(18px, 4vw, 22px);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* ----- Main Layout ----- */
+        .container {
+            flex: 1;
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 24px 20px;
+            gap: 30px;
+        }
+
+        /* ----- Sidebar (Filter) ----- */
+        .sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.35);
+            margin-bottom: 8px;
+            padding-left: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(248, 113, 113, 0.2);
+            color: white;
+        }
+
+        .filter-btn.active {
+            background: rgba(129, 7, 7, 0.55);
+            color: white;
+            border-color: rgba(248, 113, 113, 0.35);
+            box-shadow: 0 4px 14px rgba(129, 7, 7, 0.3);
+        }
+
+        .filter-count {
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .filter-btn.active .filter-count {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ----- Content Grid ----- */
+        .content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .grid-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+        }
+
+        .grid-meta {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .crawling-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e6fffa;
+            color: #047857;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .crawling-status::before {
+            content: "";
+            display: block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        /* ----- Activity Card ----- */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            transition: background 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.3);
+            border-color: rgba(248, 113, 113, 0.2);
+        }
+
+        .card:hover::before {
+            background: #810707;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+        }
+
+        .tag.source {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .tag.type-contest {
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+        }
+
+        .tag.type-cert {
+            background: rgba(217, 70, 239, 0.15);
+            color: #f0abfc;
+        }
+
+        .tag.type-camp {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fcd34d;
+        }
+
+        .d-day {
+            font-size: 13px;
+            font-weight: 800;
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .d-day.safe {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .d-day.closed {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: white;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-clamp: 2;
+            overflow: hidden;
+        }
+
+        .card-host {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-footer {
+            margin-top: auto;
+            border-top: 1px dashed rgba(255, 255, 255, 0.15);
+            padding-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-dates {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .btn-view {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .card:hover .btn-view {
+            background: #810707;
+            color: white;
+            border-color: #810707;
+        }
+
+        /* ----- Responsive ----- */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                padding: 16px;
+                gap: 20px;
+            }
+
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+
+            .filter-btn {
+                white-space: nowrap;
+            }
+
+            .filter-title {
+                display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <header>
+        <h2>진로 외부 활동 추천</h2>
+        <a href="landing.html" class="back-btn">대시보드</a>
+    </header>
+
+    <div class="container">
+
+        <aside class="sidebar">
+            <div class="filter-title">진로/계열 분류</div>
+            <button class="filter-btn active" data-category="all">
+                전체 보기 <span class="filter-count" id="count-all">0</span>
+            </button>
+            <button class="filter-btn" data-category="it">
+                IT/상경 <span class="filter-count" id="count-it">0</span>
+            </button>
+            <button class="filter-btn" data-category="science">
+                자연/의학/공학 <span class="filter-count" id="count-science">0</span>
+            </button>
+            <button class="filter-btn" data-category="humanities">
+                인문/사회/언어 <span class="filter-count" id="count-humanities">0</span>
+            </button>
+            <button class="filter-btn" data-category="art">
+                예체능/기타 <span class="filter-count" id="count-art">0</span>
+            </button>
+        </aside>
+
+        <main class="content">
+            <div class="grid-header">
+                <div class="grid-title" id="current-category">전체 추천 사이트</div>
+            </div>
+
+            <div class="card-grid" id="activity-grid">
+                <!-- Data will be injected here via JS -->
+            </div>
+        </main>
+
+    </div>
+
+    <!-- 공통 PWA 초기화 -->
+    <script src="../pwa.js"></script>
+
+    <script>
+        const studentId = localStorage.getItem("studentId");
+        if (!studentId) {
+            alert("로그인이 필요합니다.");
+            location.href = "../index.html";
+        }
+
+        /* 정적 공모전 추천 사이트 데이터 모음 */
+        const activityData = [
+            // 한국 공모전 사이트
+            {
+                id: 1,
+                title: "위비티 (Wevity)",
+                category: "all",
+                type: "종합 공모전",
+                source: "Korea",
+                host: "공모전, 대외활동 포털",
+                end_date: "상시",
+                link: "https://www.wevity.com/",
+                description: "아이디어, 디자인, IT, 문학 등 전 분야 공모전 목록 제공"
+            },
+            {
+                id: 2,
+                title: "콘테스트코리아",
+                category: "all",
+                type: "종합 공모전",
+                source: "Korea",
+                host: "공모전 및 대외활동 정보",
+                end_date: "상시",
+                link: "https://www.contestkorea.com/",
+                description: "분야별, 주최사별 공모전 및 대외활동 실시간 업데이트"
+            },
+            {
+                id: 3,
+                title: "씽굿 (Thinkcontest)",
+                category: "all",
+                type: "공모전 포털",
+                source: "Korea",
+                host: "전문 공모전 미디어",
+                end_date: "상시",
+                link: "https://www.thinkcontest.com/",
+                description: "국내 최대 규모 공모전 및 대외활동 정보 포털"
+            },
+            {
+                id: 4,
+                title: "캠퍼스픽",
+                category: "all",
+                type: "대외활동/동아리",
+                source: "Korea",
+                host: "대학생 커뮤니티",
+                end_date: "상시",
+                link: "https://www.campuspick.com/activity",
+                description: "대학생 대상 대외활동 및 소셜 활동 정보 위주"
+            },
+            {
+                id: 5,
+                title: "링커리어 (Linkareer)",
+                category: "all",
+                type: "대외활동/인턴",
+                source: "Korea",
+                host: "대학생/취준생 커뮤니티",
+                end_date: "상시",
+                link: "https://linkareer.com/",
+                description: "공모전, 연합동아리뿐만 아니라 인턴십, 신입 채용 정보까지 총망라"
+            },
+            {
+                id: 6,
+                title: "올콘 (Allcon)",
+                category: "all",
+                type: "공모전 포털",
+                source: "Korea",
+                host: "한국경제신문",
+                end_date: "상시",
+                link: "https://www.all-con.co.kr/",
+                description: "한국경제신문에서 운영하는 공모전 및 대외활동 포털"
+            },
+            // IT/과학 전문 사이트
+            {
+                id: 7,
+                title: "프로그래머스 (경진대회)",
+                category: "it",
+                type: "코딩/해커톤",
+                source: "Korea",
+                host: "IT 개발자 플랫폼",
+                end_date: "상시",
+                link: "https://programmers.co.kr/competitions",
+                description: "실무 기반 프로그래밍 챌린지 및 해커톤 대회"
+            },
+            {
+                id: 8,
+                title: "사이언스올 (과학문화포털)",
+                category: "science",
+                type: "과학/발명",
+                source: "Korea",
+                host: "한국과학창의재단",
+                end_date: "상시",
+                link: "https://www.scienceall.com/",
+                description: "과학 경진대회 및 국가 과학기술 행사 안내"
+            },
+            {
+                id: 9,
+                title: "구름 (goorm) 코딩테스트",
+                category: "it",
+                type: "코딩/해커톤",
+                source: "Korea",
+                host: "클라우드 소프트웨어 플랫폼",
+                end_date: "상시",
+                link: "https://level.goorm.io/",
+                description: "국내 대학생 및 청년 대상 코딩 테스트, 해커톤 챌린지 제공"
+            },
+            // 베트남 공모전 사이트
+            {
+                id: 10,
+                title: "YBOX",
+                category: "all",
+                type: "대외활동/공모전",
+                source: "Vietnam",
+                host: "베트남 최대 유스 포털",
+                end_date: "상시",
+                link: "https://ybox.vn/cuoc-thi",
+                description: "베트남 현지 대학생 및 청년 대상 Cuộc thi(대회) 및 인턴십 정보"
+            },
+            {
+                id: 11,
+                title: "IIG Vietnam",
+                category: "humanities",
+                type: "어학/국제대회",
+                source: "Vietnam",
+                host: "어학 평가 기관",
+                end_date: "상시",
+                link: "https://education.iigvietnam.com/tin-tuc/",
+                description: "MOS World Championship 및 영어 어학 경진대회 공지"
+            },
+            {
+                id: 12,
+                title: "TopCV Contest (이벤트/해커톤)",
+                category: "it",
+                type: "IT/직무",
+                source: "Vietnam",
+                host: "취업 포털",
+                end_date: "상시",
+                link: "https://www.topcv.vn/",
+                description: "IT 직무 위주의 취업 연계 해커톤 및 챌린지"
+            },
+            {
+                id: 13,
+                title: "Internship.edu.vn",
+                category: "all",
+                type: "인턴십/채용",
+                source: "Vietnam",
+                host: "직무·채용 커뮤니티",
+                end_date: "상시",
+                link: "https://internship.edu.vn/",
+                description: "베트남 대학생들을 위한 인턴십 및 직무 관련 프로젝트 대회 안내"
+            },
+            {
+                id: 14,
+                title: "Scholarship Planet",
+                category: "humanities",
+                type: "학술/에세이",
+                source: "Global",
+                host: "국제 장학 포털",
+                end_date: "상시",
+                link: "https://scholarshipplanet.info/",
+                description: "베트남 학생들도 지원 가능한 전세계 대상 에세이 및 논문 경진대회"
+            }
+        ];
+
+        /* 카테고리 매핑 로직 */
+        const categoryNames = {
+            "all": "전체 추천 사이트",
+            "it": "IT 및 상경계열 관련 사이트",
+            "science": "자연·의학·공학계열 관련 사이트",
+            "humanities": "인문·사회·언어계열 관련 사이트",
+            "art": "예체능 및 종합 사이트"
+        };
+
+        let currentCategory = 'all';
+
+        function init() {
+            calculateCounts();
+            renderGrid();
+            setupFilters();
+        }
+
+        function calculateCounts() {
+            document.getElementById('count-all').innerText = activityData.length;
+            document.getElementById('count-it').innerText = activityData.filter(i => i.category === 'it' || i.category === 'all').length;
+            document.getElementById('count-science').innerText = activityData.filter(i => i.category === 'science' || i.category === 'all').length;
+            document.getElementById('count-humanities').innerText = activityData.filter(i => i.category === 'humanities' || i.category === 'all').length;
+            document.getElementById('count-art').innerText = activityData.filter(i => i.category === 'art' || i.category === 'all').length;
+        }
+
+        function getTypeClass(type) {
+            if (type.includes('해커톤') || type.includes('코딩')) return 'type-camp';
+            if (type.includes('대회') || type.includes('공모전')) return 'type-contest';
+            if (type.includes('어학')) return 'type-cert';
+            return 'type-contest';
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('activity-grid');
+            grid.innerHTML = '';
+
+            const filteredData = currentCategory === 'all'
+                ? activityData
+                : activityData.filter(item => item.category === currentCategory || item.category === 'all');
+
+            if (filteredData.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align:center; color:#94a3b8;">해당 진로의 사이트가 없습니다.</div>`;
+                return;
+            }
+
+            filteredData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="tags">
+                            <span class="tag source">${item.source}</span>
+                            <span class="tag ${getTypeClass(item.type)}">${item.type}</span>
+                        </div>
+                        <span class="d-day safe">바로가기</span>
+                    </div>
+                    <div class="card-title">${item.title}</div>
+                    <div class="card-host" style="margin-bottom:8px; font-weight:bold; color: rgba(255,255,255,0.7);">${item.host}</div>
+                    <div style="font-size: 14px; color: rgba(255,255,255,0.55); margin-bottom: 20px; line-height: 1.5;">${item.description}</div>
+                    
+                    <div class="card-footer" style="margin-top: auto;">
+                        <button class="btn-view" style="width: 100%; border-radius: 8px;" onclick="window.open('${item.link.replace(/'/g, "\\'")}', '_blank')">사이트 방문하기 &rarr;</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function setupFilters() {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Remove active from all
+                    buttons.forEach(b => b.classList.remove('active'));
+                    // Add active to clicked
+                    btn.classList.add('active');
+
+                    currentCategory = btn.dataset.category;
+                    document.getElementById('current-category').innerText = categoryNames[currentCategory];
+
+                    renderGrid();
+                });
+            });
+        }
+
+        // Initialize App
+        init();
+
+    </script>
+</body>
+
+</html>

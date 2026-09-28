@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>선택과목 공유 캘린더</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#810707">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="12-4 Agent">
+
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        /* 배경 orb */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(70px);
+            will-change: transform;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(180, 10, 10, 0.5) 0%, transparent 65%);
+            top: -20%;
+            left: -15%;
+            animation: floatOrb1 8s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(200, 30, 30, 0.3) 0%, transparent 60%);
+            bottom: -15%;
+            right: -12%;
+            animation: floatOrb2 10s ease-in-out infinite;
+        }
+
+        @keyframes floatOrb1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .9;
+            }
+
+            40% {
+                transform: translate(10%, 14%) scale(1.1);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(-8%, 8%) scale(.92);
+                opacity: .75;
+            }
+        }
+
+        @keyframes floatOrb2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .8;
+            }
+
+            35% {
+                transform: translate(-10%, -10%) scale(1.12);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translate(8%, -12%) scale(.9);
+                opacity: .65;
+            }
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            background: #0d0606;
+            color: #e2e8f0;
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        /* HEADER */
+
+        header {
+            backdrop-filter: blur(16px);
+            background: rgba(13, 6, 6, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            color: white;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h2 {
+            margin: 0;
+            font-size: clamp(16px, 4vw, 20px);
+            font-weight: 700;
+        }
+
+        /* 전체 레이아웃 */
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        /* 좌측 달력 */
+
+        .left {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            width: 100%;
+            backdrop-filter: blur(16px);
+        }
+
+        .dayName {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 4px;
+            text-align: center;
+            font-weight: bold;
+            font-size: clamp(11px, 1.8vw, 14px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        .day {
+            min-height: 70px;
+            border-right: 1px solid rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 6px 4px;
+            cursor: pointer;
+            overflow: hidden;
+            vertical-align: top;
+            width: 100%;
+        }
+
+        .day:nth-child(7n) {
+            border-right: none;
+        }
+
+        .day:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .today {
+            background: rgba(129, 7, 7, 0.25);
+        }
+
+        /* 일정 */
+
+        .event {
+            color: white;
+            padding: 2px 4px;
+            margin-top: 2px;
+            border-radius: 3px;
+            font-size: clamp(9px, 1.2vw, 12px);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .exam {
+            background: #b30000 !important;
+        }
+
+        .more {
+            font-size: 10px;
+            margin-top: 2px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 우측 패널 */
+
+        .right {
+            width: 280px;
+            min-width: 220px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            backdrop-filter: blur(16px);
+        }
+
+        .panelSection {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .panelSection h3 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+        }
+
+        /* 과목 리스트 */
+
+        .subjectItem {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .subjectItem span {
+            flex: 1;
+            text-align: left;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 과목 색상 */
+
+        .colorBox {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        /* 시간표 */
+
+        .scheduleItem {
+            padding: 5px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+        }
+
+        .currentClass {
+            background: rgba(129, 7, 7, 0.35);
+            font-weight: bold;
+        }
+
+        /* DDAY */
+
+        .ddayItem {
+            padding: 5px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .ddayItem span:first-child {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ddaySoon {
+            color: #f87171;
+            font-weight: bold;
+        }
+
+        /* 컨트롤 버튼 */
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 6px 12px;
+            cursor: pointer;
+            border: none;
+            background: #810707;
+            color: white;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #a10a0a;
+        }
+
+        /* 모달 */
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            background: rgba(0, 0, 0, 0.4);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modalBox {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 24px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 360px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+            color: white;
+            backdrop-filter: blur(24px);
+        }
+
+        input:not([type="checkbox"]),
+        select {
+            width: 100%;
+            padding: 9px;
+            margin-top: 4px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 14px;
+        }
+
+        select option {
+            background: #1a0505;
+            color: white;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            margin: 0;
+            padding: 0;
+            cursor: pointer;
+            accent-color: #810707;
+        }
+
+        /* 태블릿 (768px 이하) */
+
+        @media (max-width:768px) {
+
+            .container {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .right {
+                width: 240px;
+                min-width: 200px;
+                padding: 12px;
+            }
+
+            .day {
+                min-height: 55px;
+                padding: 4px 3px;
+            }
+
+        }
+
+        /* 모바일 (600px 이하) */
+
+        @media (max-width:600px) {
+
+            .container {
+                flex-direction: column;
+                padding: 10px;
+                gap: 12px;
+            }
+
+            .left {
+                width: 100%;
+            }
+
+            .right {
+                width: 100%;
+                min-width: unset;
+                max-height: none;
+            }
+
+            .calendar {
+                font-size: 11px;
+                width: 100%;
+            }
+
+            .dayName {
+                padding: 6px 2px;
+                font-size: 11px;
+            }
+
+            .day {
+                min-height: 52px;
+                padding: 3px 2px;
+            }
+
+            .day b {
+                font-size: 11px;
+            }
+
+            .event {
+                font-size: 9px;
+                padding: 1px 3px;
+            }
+
+            .modalBox {
+                padding: 16px;
+            }
+
+        }
+
+        /* 매우 작은 화면 (380px 이하) */
+
+        @media (max-width:380px) {
+
+            .day {
+                min-height: 48px;
+                padding: 2px 1px;
+            }
+
+            .event {
+                font-size: 8px;
+                padding: 1px 2px;
+                border-radius: 2px;
+            }
+
+            .day b {
+                font-size: 10px;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;">
+        <h2 style="margin: 0;">선택과목 공유 캘린더</h2>
+        <button onclick="location.href='landing.html'"
+            style="background: rgba(255,255,255,0.15); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">대시보드</button>
+    </header>
+
+    <div class="container">
+
+        <div class="left">
+
+            <div class="controls">
+                <button onclick="prevMonth()">◀</button>
+                <button onclick="goToday()">오늘</button>
+                <button onclick="nextMonth()">▶</button>
+            </div>
+
+            <h3 id="monthLabel" style="text-align:center"></h3>
+
+            <div class="calendar" id="calendar"></div>
+
+        </div>
+
+        <div class="right">
+
+            <div class="panelSection">
+                <h3>과목</h3>
+                <div id="subjectList"></div>
+                <button onclick="openModal()">일정 추가</button>
+            </div>
+
+            <hr>
+
+            <div class="panelSection">
+                <h3>오늘 시간표</h3>
+                <div id="todaySchedule"></div>
+            </div>
+
+            <hr>
+
+            <div class="panelSection">
+                <h3>D-DAY</h3>
+                <div id="ddayList"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modalBox">
+
+            <h3>일정 추가</h3>
+
+            <input id="title" placeholder="일정">
+
+            <label>공개 범위</label>
+            <select id="scopeSelect">
+                <option value="personal">나만 보기 (개인 일정)</option>
+                <option value="global">모두 공유 (전체/과목 일정)</option>
+            </select>
+
+            <label>과목 / 분류</label>
+            <select id="subjectSelect"></select>
+
+            <label>시작</label>
+            <input type="date" id="start">
+
+            <label>종료</label>
+            <input type="date" id="end">
+
+            <button onclick="saveEvent()">저장</button>
+            <button onclick="closeModal()">취소</button>
+
+        </div>
+    </div>
+
+    <script type="module">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+        /* firebase */
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEm-XkkiOP-PshsDhA7naY8RrAB0ty6rk",
+            authDomain: "project-401158774225034026.firebaseapp.com",
+            databaseURL: "https://project-401158774225034026-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "project-401158774225034026",
+            storageBucket: "project-401158774225034026.firebasestorage.app",
+            messagingSenderId: "681425270652",
+            appId: "1:681425270652:web:65cd93e979e7c17125d6f9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        /* 로그인 */
+
+        const studentId = localStorage.getItem("studentId");
+        const mySubjects = JSON.parse(localStorage.getItem("mySubjects") || "[]");
+
+        console.log("studentId:", studentId);
+        console.log("mySubjects:", mySubjects);
+
+        if (!studentId) {
+            alert("로그인 필요");
+            location.href = "../index.html";
+        }
+
+        /* 과목 이름 안전하게 가져오기 */
+
+        function getSubjectName(s) {
+            return s.subject || s.name || s.title || "과목";
+        }
+
+        /* 색상 */
+
+        function generateColor(i) {
+            const hue = (i * 137.508) % 360;
+            return `hsl(${hue},75%,60%)`;
+        }
+
+        let subjectColor = {};
+
+        mySubjects.forEach((s, i) => {
+            const name = getSubjectName(s);
+            subjectColor[name] = generateColor(i);
+        });
+
+        /* ─── 이벤트 저장소 (소스별로 분리) ─── */
+
+        let eventsGlobal = [];   // calendar/global
+        let eventsPersonal = [];   // calendar/personal/{id}
+        let eventsSubjects = {};   // calendar/subjects/{name}/{group}
+
+        let events = [];           // 렌더링용 합산 배열
+
+        let visibleSubjects = {};
+        visibleSubjects["전체 공지"] = true;
+        visibleSubjects["개인 일정"] = true;
+        mySubjects.forEach(s => {
+            visibleSubjects[getSubjectName(s)] = true;
+        });
+
+        function syncEvents() {
+            events = [
+                ...eventsGlobal,
+                ...eventsPersonal,
+                ...Object.values(eventsSubjects).flat()
+            ];
+
+            renderCalendar();
+
+            try {
+                localStorage.setItem('calendarEvents', JSON.stringify(events));
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        if (reg.active) reg.active.postMessage({ type: 'CHECK_NOTIFICATIONS', events: events });
+                    });
+                }
+            } catch (_) { }
+        }
+
+        /* ─── Firebase 리스너 ─── */
+
+        // 전체 공지
+        onValue(ref(db, "calendar/global"), snap => {
+            eventsGlobal = [];
+            snap.forEach(e => {
+                eventsGlobal.push({ id: e.key, ...e.val(), type: "global", subject: "전체 공지" });
+            });
+            syncEvents();
+        });
+
+        // 개인 일정
+        onValue(ref(db, `calendar/personal/${studentId}`), snap => {
+            eventsPersonal = [];
+            snap.forEach(e => {
+                let val = e.val();
+                const orig = val.subject && val.subject !== "common" ? val.subject : null;
+                eventsPersonal.push({
+                    id: e.key,
+                    ...val,
+                    type: "personal",
+                    subject: "개인 일정",       // 필터(체크박스)용 키는 '개인 일정'으로 고정
+                    originalSubject: orig      // 색상 표시용으로 원래 과목명 보존
+                });
+            });
+            syncEvents();
+        });
+
+        // 과목별 일정
+        mySubjects.forEach(s => {
+            const subjectName = getSubjectName(s);
+            eventsSubjects[subjectName] = [];
+            onValue(ref(db, `calendar/subjects/${subjectName}/${s.group}`), snap => {
+                eventsSubjects[subjectName] = [];
+                snap.forEach(e => {
+                    eventsSubjects[subjectName].push({
+                        id: e.key,
+                        ...e.val(),
+                        type: "subject",
+                        subject: subjectName
+                    });
+                });
+                syncEvents();
+            });
+        });
+
+        /* 날짜 */
+
+        let today = new Date();
+        let month = today.getMonth();
+        let year = today.getFullYear();
+
+        const calendar = document.getElementById("calendar");
+
+        const days = ["일", "월", "화", "수", "목", "금", "토"];
+
+        function pad(n) { return n.toString().padStart(2, "0"); }
+
+        /* 캘린더 */
+
+        function renderCalendar() {
+
+            calendar.innerHTML = "";
+
+            days.forEach(d => {
+                let div = document.createElement("div");
+                div.className = "dayName";
+                div.innerText = d;
+                calendar.appendChild(div);
+            });
+
+            document.getElementById("monthLabel").innerText = year + "년 " + (month + 1) + "월";
+
+            let firstDay = new Date(year, month, 1).getDay();
+            let lastDate = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDay; i++) {
+                calendar.appendChild(document.createElement("div"));
+            }
+
+            for (let d = 1; d <= lastDate; d++) {
+
+                let date = `${year}-${pad(month + 1)}-${pad(d)}`;
+
+                let cell = document.createElement("div");
+                cell.className = "day";
+
+                if (
+                    d === today.getDate() &&
+                    month === today.getMonth() &&
+                    year === today.getFullYear()
+                ) {
+                    cell.classList.add("today");
+                }
+
+                cell.innerHTML = "<b>" + d + "</b>";
+
+                let dayEvents = events.filter(e => {
+                    if (date < e.start || date > e.end) return false;
+                    return visibleSubjects[e.subject] !== false;
+                });
+
+                dayEvents.slice(0, 3).forEach(e => {
+
+                    let ev = document.createElement("div");
+                    ev.className = "event";
+
+                    let color;
+                    if (e.type === "global") {
+                        color = "#94a3b8";   // 전체 공지: 회색
+                    } else if (e.type === "personal") {
+                        // 과목을 지정한 개인 일정이면 그 과목 색상, 아니면 초록
+                        color = (e.originalSubject && subjectColor[e.originalSubject])
+                            ? subjectColor[e.originalSubject]
+                            : "#10b981";
+                    } else {
+                        // 과목(공유) 일정: 사이드바 색상과 동일
+                        color = subjectColor[e.subject] || "#94a3b8";
+                    }
+
+                    ev.style.background = color;
+                    ev.innerText = e.title;
+
+                    if (e.title.includes("시험") || e.title.includes("고사")) {
+                        ev.classList.add("exam");
+                    }
+
+                    /* 일정 삭제 */
+
+                    ev.onclick = () => {
+
+                        if (confirm("해당 일정을 삭제하시겠습니까?")) {
+
+                            if (e.type === "global") {
+                                remove(ref(db, "calendar/global/" + e.id));
+                            } else if (e.type === "personal") {
+                                remove(ref(db, `calendar/personal/${studentId}/${e.id}`));
+                            } else {
+                                let group = mySubjects.find(s => getSubjectName(s) === e.subject)?.group;
+                                remove(ref(db, `calendar/subjects/${e.subject}/${group}/${e.id}`));
+                            }
+
+                        }
+
+                    };
+
+                    cell.appendChild(ev);
+
+                });
+
+                calendar.appendChild(cell);
+
+            }
+
+            renderDDay();
+            renderTodaySchedule();
+
+        }
+
+        /* 컨트롤 */
+
+        window.prevMonth = () => { month--; if (month < 0) { month = 11; year--; } renderCalendar(); }
+        window.nextMonth = () => { month++; if (month > 11) { month = 0; year++; } renderCalendar(); }
+        window.goToday = () => { month = today.getMonth(); year = today.getFullYear(); renderCalendar(); }
+
+        /* 과목 UI */
+
+        const subjectList = document.getElementById("subjectList");
+
+        function createFilter(name, color) {
+
+            let div = document.createElement("div");
+            div.className = "subjectItem";
+
+            let check = document.createElement("input");
+            check.type = "checkbox";
+            check.checked = true;
+
+            check.onchange = () => {
+                visibleSubjects[name] = check.checked;
+                renderCalendar();
+            };
+
+            let label = document.createElement("span");
+            label.textContent = name || "과목";
+
+            let box = document.createElement("div");
+            box.className = "colorBox";
+            box.style.background = color;
+
+            div.appendChild(check);
+            div.appendChild(label);
+            div.appendChild(box);
+
+            subjectList.appendChild(div);
+
+        }
+
+        createFilter("전체 공지", "#94a3b8");
+        createFilter("개인 일정", "#10b981");
+
+        mySubjects.forEach((s, i) => {
+
+            const name = getSubjectName(s);
+
+            console.log("subject UI:", name);
+
+            createFilter(name, generateColor(i));
+
+        });
+
+        /* 시간표 */
+
+        let userTimetable = null;
+
+        onValue(ref(db, `students/${studentId}/timetable`), snap => {
+            if (snap.exists()) {
+                userTimetable = snap.val();
+                renderTodaySchedule();
+            }
+        });
+
+        function renderTodaySchedule() {
+
+            let box = document.getElementById("todaySchedule");
+            if (!box) return;
+            box.innerHTML = "";
+
+            if (!userTimetable) {
+                box.innerHTML = `<div style="text-align:center; padding: 20px; color:rgba(255,255,255,0.5); font-size:13px;">시간표 로딩중...</div>`;
+                return;
+            }
+
+            let map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+            let day = map[new Date().getDay()];
+
+            if (day === "sun" || day === "sat" || !userTimetable[day]) {
+                box.innerHTML = `
+                    <div style="padding: 24px 16px; text-align: center; background: rgba(255, 255, 255, 0.03); border-radius: 10px; border: 1px dashed rgba(255, 255, 255, 0.15);">
+                        <div style="font-weight: 600; color: rgba(255, 255, 255, 0.9); font-size: 15px; margin-bottom: 6px;">주말입니다.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const roomMapping = {
+                "1": { "21세기 문화탐구": "12학년 1반", "Comprehensive Chemistry": "교과2실", "Critical Literacy in English": "12학년 2반", "물리학II": "12학년 3반", "수학과제 탐구": "12학년 4반", "영어II": "12학년 5반", "윤리와 사상": "교과3실" },
+                "2": { "21세기 문화탐구": "12학년 1반", "기하": "12학년 3반", "미디어와 창의적 표현": "12학년 5반", "생명과학II": "12학년 2반", "수학과제 탐구": "12학년 4반", "윤리와 사상": "교과3실", "음악 연주와 창작": "음악A실" },
+                "3": { "고급수학I": "12학년 4반", "과학과제 연구": "12학년 2반", "사회문제 탐구": "12학년 5반", "수학과제 탐구": "12학년 3반", "시사 베트남어": "교과3실", "심층 융합 독서": "12학년 1반" },
+                "4": { "Critical Literacy in English": "12학년 2반", "Introduction to Engineering": "12학년 1반", "기하": "12학년 3반", "미디어와 창의적 표현": "12학년 5반", "생명과학II": "12학년 4반", "세계 문제와 미래 사회": "교과4실" },
+                "5": { "Comprehensive Biology": "12학년 3반", "물리학II": "12학년 5반", "사회문제 탐구": "12학년 4반", "세계 문제와 미래 사회": "교과4실", "심층 융합 독서": "12학년 1반", "영어II": "12학년 2반", "한국 지역의 이해": "교과2실" },
+                "6": { "History of Early Civilizations": "교과2실", "고급수학I": "12학년 4반", "미디어와 창의적 표현": "12학년 5반", "베트남어 회화": "교과3실", "심층 융합 독서": "12학년 1반", "영어II": "12학년 2반", "화학II": "12학년 3반" },
+                "7": { "English Literature": "12학년 1반", "과학과제 연구": "12학년 2반", "세계 문제와 미래 사회": "12학년 3반", "영어II": "12학년 5반", "윤리와 사상": "교과3실", "정보과학 과제연구": "정보A실", "한국 지역의 이해": "3학년 4반" },
+                "8": { "History of Early Civilizations": "12학년 1반", "기하": "12학년 3반", "미술 전공 실기 심화": "미술B실", "사회문제 탐구": "12학년 4반", "영어II": "12학년 5반", "화학II": "12학년 2반" }
+            };
+
+            function normalizeSubject(name) {
+                return name.replace(/\s+/g, '') // 모든 공백 제거
+                    .replace(/Ⅰ/g, 'I').replace(/Ⅱ/g, 'II').replace(/Ⅲ/g, 'III') // 유니코드 로마자 변환
+                    .toLowerCase(); // 대소문자 무시 매칭
+            }
+
+            const normalizedRoomMapping = {};
+            for (let group in roomMapping) {
+                normalizedRoomMapping[group] = {};
+                for (let sub in roomMapping[group]) {
+                    normalizedRoomMapping[group][normalizeSubject(sub)] = roomMapping[group][sub];
+                }
+            }
+
+            let todayClasses = userTimetable[day];
+            let classKeys = Object.keys(todayClasses).sort((a, b) => parseInt(a) - parseInt(b));
+
+            classKeys.forEach(period => {
+
+                let subjectRaw = todayClasses[period] || "";
+                let parts = subjectRaw.split("_");
+                let baseName = parts[0];
+                let groupNum = parts[1];
+
+                let normBase = normalizeSubject(baseName);
+
+                let roomInfoHtml = "";
+                if (groupNum && normalizedRoomMapping[groupNum] && normalizedRoomMapping[groupNum][normBase]) {
+                    roomInfoHtml = `<span style="font-size: 10px; margin-left: 6px; padding: 2px 5px; background: rgba(255,255,255,0.12); border-radius: 4px; color: #cbd5e1; white-space: nowrap; flex-shrink: 0;">${normalizedRoomMapping[groupNum][normBase]}</span>`;
+                }
+
+                let div = document.createElement("div");
+                div.className = "scheduleItem";
+                div.style.display = "flex";
+                div.style.alignItems = "center";
+
+                div.innerHTML = `
+                    <span style="font-weight: 600; color: rgba(255,255,255,0.85); flex-shrink: 0; min-width: 44px;">${period}교시</span>
+                    <span style="margin-left: 6px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px;">${baseName}</span>
+                    ${roomInfoHtml}
+                `;
+
+                let currentPeriod = Math.floor((new Date().getHours() - 8)) + 1;
+                if (parseInt(period) === currentPeriod) {
+                    div.classList.add("currentClass");
+                }
+
+                box.appendChild(div);
+
+            });
+
+        }
+
+        /* DDAY */
+
+        function renderDDay() {
+
+            let list = document.getElementById("ddayList");
+            list.innerHTML = "";
+
+            let now = new Date();
+
+            let upcoming = events
+                .map(e => {
+                    let diff = Math.ceil((new Date(e.start) - now) / (1000 * 60 * 60 * 24));
+                    return { ...e, diff };
+                })
+                .filter(e => e.diff >= 0)
+                .sort((a, b) => a.diff - b.diff)
+                .slice(0, 10);
+
+            upcoming.forEach(e => {
+
+                let div = document.createElement("div");
+                div.className = "ddayItem";
+
+                let label = document.createElement("span");
+                label.innerText = e.title;
+
+                let day = document.createElement("span");
+                day.innerText = "D-" + e.diff;
+
+                if (e.diff <= 7) {
+                    day.classList.add("ddaySoon");
+                }
+
+                div.appendChild(label);
+                div.appendChild(day);
+
+                list.appendChild(div);
+
+            });
+
+        }
+
+        /* 모달 */
+
+        window.openModal = () => {
+
+            let sel = document.getElementById("subjectSelect");
+            sel.innerHTML = "";
+
+            let optCom = document.createElement("option");
+            optCom.value = "common";
+            optCom.innerText = "공통 (선택과목 지정 없음)";
+            sel.appendChild(optCom);
+
+            mySubjects.forEach(s => {
+
+                let name = getSubjectName(s);
+
+                let o = document.createElement("option");
+                o.value = name;
+                o.innerText = name;
+                sel.appendChild(o);
+
+            });
+
+            document.getElementById("modal").style.display = "flex";
+
+        }
+
+        window.closeModal = () => {
+            document.getElementById("modal").style.display = "none";
+        }
+
+        /* 저장 */
+
+        window.saveEvent = () => {
+
+            let title = document.getElementById("title").value;
+            let start = document.getElementById("start").value;
+            let end = document.getElementById("end").value;
+            let subject = document.getElementById("subjectSelect").value;
+            let scope = document.getElementById("scopeSelect").value;
+
+            if (!title || !start || !end) {
+                alert("모든 항목 입력");
+                return;
+            }
+
+            if (scope === "personal") {
+                push(ref(db, `calendar/personal/${studentId}`), {
+                    title, start, end, createdBy: studentId, type: "personal", subject: subject
+                });
+            } else {
+                if (subject === "common") {
+                    push(ref(db, "calendar/global"), {
+                        title, start, end, createdBy: studentId, type: "global", subject: "common"
+                    });
+                } else {
+                    let group = mySubjects.find(s => getSubjectName(s) === subject)?.group;
+                    push(ref(db, `calendar/subjects/${subject}/${group}`), {
+                        title, start, end, createdBy: studentId, type: "subject", subject: subject
+                    });
+                }
+            }
+
+            closeModal();
+
+        }
+
+        renderCalendar();
+
+    </script>
+
+    <!-- 공통 PWA 초기화 (SW 등록 + 알림) -->
+    <script src="../pwa.js"></script>
+
+</body>
+
+</html>
